@@ -2,13 +2,29 @@ const express = require("express");
 const router = express.Router();
 const {
   getUsersController,
+  getUserController,
   addUserController,
-  userLoginController
+  userLoginController,
+  userLogoutController,
+  myAccountController,
 } = require("../controllers/userController");
 const { check } = require("express-validator");
+const { auth } = require("../middleware/auth");
+const { admin } = require('../middleware/admin')
+const { error } = require('../middleware/error')
 
 //get
-router.get("/", getUsersController);
+router.get("/", auth, admin, getUsersController, error);
+
+router.get("/me", auth, myAccountController, error);
+
+router.get(
+  "/:id",
+  [check("id", "Invalid user id").isMongoId()],
+  auth,
+  getUserController,
+  error
+);
 
 //post
 router.post(
@@ -19,7 +35,9 @@ router.post(
     check("email", "Email is required").notEmpty(),
     check("email", "Enter a valid email").isEmail(),
     check("password", "Password is required").notEmpty(),
-    check("password", "Password must be minimum 6 characters").isLength({min: 6}),
+    check("password", "Password must be minimum 6 characters").isLength({
+      min: 6,
+    }),
     check("confirmpassword", "Confirm password is required").notEmpty(),
     check("confirmpassword").custom((input, { req }) => {
       if (input === req.body.password) {
@@ -29,9 +47,11 @@ router.post(
       }
     }),
   ],
-  addUserController
+  addUserController, error
 );
 
-router.post('/login', userLoginController)
+router.post("/login", userLoginController, error);
+
+router.post("/logout", userLogoutController, error);
 
 module.exports = router;

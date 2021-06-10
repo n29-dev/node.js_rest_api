@@ -27,17 +27,19 @@ const userSchema = new mongoose.Schema({
 })
 
 userSchema.pre('save', async function(next){
+    
+    const hashedPassword = await bcrypt.hash(this.password, 10)
+    this.password =  hashedPassword
 
-    const hashed = await bcrypt.hash(this.password, 10)
-    this.password = hashed
     next()
 })
 
-userSchema.methods.generateAuthToken = async function(next){
-    const token = await jwt.sign({id: this._id, admin: this.admin}, 'sercet', {expiresIn: '4h'})
+userSchema.methods.generateAuthToken = async function(){
+
+    const token = await jwt.sign({id: this._id, admin: this.admin}, process.env.JWT_SECRET, {expiresIn: '4h'})
+    
     return token
 }
-
 
 const User = mongoose.model('User', userSchema);
 
